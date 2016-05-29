@@ -59,6 +59,22 @@ us_state_abbrev = {
     'Wyoming': 'WY',
 }
 
+HTML_HEADER = 'Content-type: text/html\n\n'
+
+Top_HTML = '''
+<html>
+<head>
+<title>Sample Python Forms-responder</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<div id="chart-div" height="100%" width="100%"></div>
+<div id="chart-div-2"></div>
+'''
+
+Bottom_HTML = "</body></html>"
+
+
 def openFile(filename):
     f = open(filename, "rU")
     s = f.read()
@@ -127,40 +143,22 @@ def organize():
            mD[us_state_abbrev.get(i[0], "")] = d
        else:
            mD[i[0]] = d
-            
+
     return mD
 
-def locationsAndValues():
+def locationsAndValues(masterDict):
     winnerDict = {"Bernie":0, "Clinton":1, "None":0.5}
-    d = organize()
     locations =[]
     values = []
-    for i in d:
+    for i in masterDict:
         if len(i) == 2:
-            if "Winner" in d[i]:
+            if "Winner" in masterDict[i]:
                 locations.append(i)
-                values.append(winnerDict[d[i]["Winner"]])
+                values.append(winnerDict[masterDict[i]["Winner"]])
     return [locations, values]
 
-HTML_HEADER = 'Content-type: text/html\n\n'
-
-Top_HTML = '''
-<html>
-<head>
-<title>Sample Python Forms-responder</title>
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-</head>
-<body>
-<div id="chart-div" height="100%" width="100%"></div>
-<script>
-'''
-
-Bottom_HTML = "</script></body></html>"
-
-
-def main():
-    locationsValues = locationsAndValues()
-
+def displayMap(masterDict):
+    locationsValues = locationsAndValues(masterDict)
     js = '''
     var chartDiv = document.getElementById('chart-div');
     var data = [{
@@ -186,12 +184,39 @@ def main():
     Plotly.plot(chartDiv, data, layout);
 
     chartDiv.on("plotly_click", function(data){
-    alert(data.points[0].location);
+    window.open("main.py?state=" + data.points[0].location);
     });
-'''
+    '''
+    print("<script>")
+    print(js)
+    print("</script>")
+
+def displayStatePage(state, masterDict):
+    js = '''
+    var data = [
+       {
+        x: ["Bernie Sanders", "Hillary Clinton"],
+        y: [200, 100],
+        type: 'bar'
+       }
+    ];
+
+    Plotly.newPlot("chart-div-2", data);
+    '''
+    print("<script>")
+    print(js)
+    print("</script")
+
+def main():
+    masterDict = organize()
     print(HTML_HEADER)
     print(Top_HTML)
-    print(js)
+    elements = cgi.FieldStorage()
+    keys = elements.keys()
+    if "state" in keys:
+        displayStatePage(str(elements.getvalue("state")), masterDict)
+    else:
+        displayMap(masterDict)
     print(Bottom_HTML)
 
 main()
