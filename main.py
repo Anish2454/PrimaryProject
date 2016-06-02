@@ -59,6 +59,66 @@ us_state_abbrev = {
     'Wyoming': 'WY',
 }
 
+states = {
+        'AK': 'Alaska',
+        'AL': 'Alabama',
+        'AR': 'Arkansas',
+        'AS': 'American Samoa',
+        'AZ': 'Arizona',
+        'CA': 'California',
+        'CO': 'Colorado',
+        'CT': 'Connecticut',
+        'DC': 'District of Columbia',
+        'DE': 'Delaware',
+        'FL': 'Florida',
+        'GA': 'Georgia',
+        'GU': 'Guam',
+        'HI': 'Hawaii',
+        'IA': 'Iowa',
+        'ID': 'Idaho',
+        'IL': 'Illinois',
+        'IN': 'Indiana',
+        'KS': 'Kansas',
+        'KY': 'Kentucky',
+        'LA': 'Louisiana',
+        'MA': 'Massachusetts',
+        'MD': 'Maryland',
+        'ME': 'Maine',
+        'MI': 'Michigan',
+        'MN': 'Minnesota',
+        'MO': 'Missouri',
+        'MP': 'Northern Mariana Islands',
+        'MS': 'Mississippi',
+        'MT': 'Montana',
+        'NA': 'National',
+        'NC': 'North Carolina',
+        'ND': 'North Dakota',
+        'NE': 'Nebraska',
+        'NH': 'New Hampshire',
+        'NJ': 'New Jersey',
+        'NM': 'New Mexico',
+        'NV': 'Nevada',
+        'NY': 'New York',
+        'OH': 'Ohio',
+        'OK': 'Oklahoma',
+        'OR': 'Oregon',
+        'PA': 'Pennsylvania',
+        'PR': 'Puerto Rico',
+        'RI': 'Rhode Island',
+        'SC': 'South Carolina',
+        'SD': 'South Dakota',
+        'TN': 'Tennessee',
+        'TX': 'Texas',
+        'UT': 'Utah',
+        'VA': 'Virginia',
+        'VI': 'Virgin Islands',
+        'VT': 'Vermont',
+        'WA': 'Washington',
+        'WI': 'Wisconsin',
+        'WV': 'West Virginia',
+        'WY': 'Wyoming'
+}
+
 HTML_HEADER = 'Content-type: text/html\n\n'
 
 Top_HTML = '''
@@ -73,38 +133,6 @@ Top_HTML = '''
 '''
 
 Bottom_HTML = "</body></html>"
-
-
-def openFile(filename):
-    f = open(filename, "rU")
-    s = f.read()
-    f.close()
-    return s
-
-def organize():
-    s = openFile("demdata.csv")
-    stateByState = s.split("\n")
-    lst = [i.split(",") for i in stateByState]
-    keys = lst[0]
-    mD = {}
-    for i in lst[1:-1]:
-       d = {}
-       for n in range(len(keys)):
-           if n < len(i):
-               d[keys[n]] = i[n]
-           else:
-               d[keys[n]] = ""
-       if d["Bernie Delegates"] != "" and d["Clinton Delegates"] != "":
-           if max(int(d["Bernie Delegates"]), int(d["Clinton Delegates"])) == int(d["Bernie Delegates"]):
-               d["Winner"] = "Bernie"
-           else:
-               d["Winner"] = "Clinton"
-       if i[0] in us_state_abbrev:
-           mD[us_state_abbrev.get(i[0], "")] = d
-       else:
-           mD[i[0]] = d
-
-    return mD
 
 def convertListToJs(list):
     finalString = "["
@@ -192,16 +220,53 @@ def displayMap(masterDict):
     print("</script>")
 
 def displayStatePage(state, masterDict):
+    if state in masterDict:
+        stateInfo = masterDict[state]
+    if "Bernie Delegates" in stateInfo and "Clinton Delegates" in stateInfo:
+        xBernie = [stateInfo["Bernie Delegates"]]
+        xClinton = [stateInfo["Clinton Delegates"]]
+    else:
+        xBernie = 0
+        xClinton = 0
     js = '''
-    var data = [
-       {
-        x: ["Bernie Sanders", "Hillary Clinton"],
-        y: [200, 100],
-        type: 'bar'
-       }
-    ];
+    var trace1 = {
+        x: ''' + convertListToJs(xBernie) + "," + '''
+        y: ["Sanders"],
+        name: "Bernie Sanders",
+        orientation: 'h',
+        type: 'bar',
+        marker: {
+            color: 'rgba(55,128,191,0.6)',
+            width: 1
+        }
+    };
 
-    Plotly.newPlot("chart-div-2", data);
+    var trace2 = {
+        x: ''' + convertListToJs(xClinton) +',' + '''
+        y: ["Clinton"],
+        name: 'Hillary Cinton',
+        orientation: 'h',
+        type: 'bar',
+        marker: {
+            color: "Blue",
+            width: 1
+        }
+    };
+
+    var data = [trace1, trace2];
+
+    var layout = {
+        title: 'The ''' + states[state] + ''' Delegate Count',
+        width: (window.innerWidth / 2),
+        height: (window.innerHeight / 2),
+        font: {
+            family: 'Arial',
+            size: 24,
+            color: "Black"
+        }
+    };
+
+    Plotly.newPlot('chart-div', data, layout);
     '''
     print("<script>")
     print(js)
